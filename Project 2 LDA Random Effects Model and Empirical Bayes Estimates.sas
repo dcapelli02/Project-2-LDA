@@ -1,5 +1,5 @@
 data alzheimer25;
-    set "/home/u64400254/sasuser.v94/alzheimer25.sas7bdat"; 
+    set "~/Project 1 LDA/alzheimer25.sas7bdat"; 
 run;
 
 proc means data=alzheimer25 noprint;
@@ -128,11 +128,10 @@ run;
 /* HISTOGRAM */
 /* ----------------------------------------------------------- */
 proc sgplot data=eb_intercepts;
-    title "2. Distribution of Random Intercepts (Normality Check)";
+    title "2. Distribution of Random Intercepts";
     
     histogram Estimate / nbins=30 fillattrs=(color=lightblue);
-    density Estimate / type=normal lineattrs=(color=darkblue thickness=2);
-    
+        
     yaxis grid;
     xaxis label="Random Intercept Estimate";
 run;
@@ -171,11 +170,10 @@ run;
 /* HISTOGRAM */
 /* ----------------------------------------------------------- */
 proc sgplot data=eb_slopes;
-    title "4. Distribution of Random Slopes (Normality Check)";
+    title "4. Distribution of Random Slopes";
     
     histogram Estimate / nbins=30 fillattrs=(color=pink);
-    density Estimate / type=normal lineattrs=(color=darkred thickness=2);
-    
+        
     yaxis grid;
     xaxis label="Random Slope Estimate";
 run;
@@ -189,7 +187,7 @@ run;
 
 /* Plot */
 proc sgplot data=plot_data;
-    title "Observed vs. Predicted Risk over Time (GEE)";
+    title "Observed vs. Predicted Risk over Time";
     
 
     series x=TIME y=Observed_Prop / lineattrs=(color=black thickness=2) 
@@ -199,9 +197,34 @@ proc sgplot data=plot_data;
 
     series x=TIME y=Mean_Predicted / lineattrs=(color=red pattern=dash thickness=2) 
            markerattrs=(symbol=none) 
-           legendlabel="Predicted Probability (GEE)";
+           legendlabel="Predicted Probability";
            
     yaxis label="Probability of Severe Dementia (CDRSB >= 10)" grid values=(0.2 to 0.7 by 0.1);
     xaxis label="Years (Time)";
 run;
 
+proc sort data=eb_intercepts; by SUBJECT; run;
+proc sort data=eb_slopes;     by SUBJECT; run;
+
+data eb_intercept_slope;
+    merge eb_intercepts(rename=(Estimate=Intercept_Est))
+          eb_slopes(rename=(Estimate=Slope_Est));
+    by SUBJECT;
+run;
+
+proc sgplot data=eb_intercept_slope;
+    title "Random Intercept vs Random Slope (Empirical Bayes Estimates)";
+    
+    scatter x=Intercept_Est y=Slope_Est /
+        markerattrs=(symbol=circlefilled size=5 color=darkblue)
+        transparency=0.1;
+    
+    refline 0 / axis=x lineattrs=(pattern=dash color=black);
+    refline 0 / axis=y lineattrs=(pattern=dash color=black);
+    
+    xaxis label="Random Intercept Estimate (Log-Odds)";
+    yaxis label="Random Slope Estimate (Time Effect)";
+    
+    inset "Upper-right = High baseline + Fast decline"  / position=topright;
+    inset "Lower-left = Low baseline + Slow decline"    / position=bottomleft;
+run;
